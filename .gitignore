@@ -4,6 +4,12 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+.gitattributes
+.gitignore
+.mvn
+.pom.xml
+
+
 ### STS ###
 .apt_generated
 .classpath
@@ -31,3 +37,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Env files ###
+.env
