@@ -13,7 +13,10 @@ public class User {
     @Column(nullable = false, unique = true) // username не может быть null и должен быть уникальным
     private String username;
 
-    @Column(nullable = false) // пароль не может быть пустым
+    //@Column(nullable = false) // пароль не может быть пустым
+    //private String passwordHash;
+
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     // ===== Конструкторы =====
