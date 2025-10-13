@@ -1,0 +1,30 @@
+name: Java CI
+
+on:
+  push:
+    branches: [ "main" ]      # 🔹 Запускается при каждом push в ветку main
+  pull_request:
+    branches: [ "main" ]      # 🔹 И при каждом pull request в main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest     # 🔹 GitHub создаёт виртуальную машину Ubuntu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        # 🔹 Клонирует твой репозиторий внутрь виртуальной машины
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'   # 🔹 Устанавливает JDK 17
+          distribution: 'temurin'  # 🔹 Temurin — это OpenJDK-дистрибутив
+
+      - name: Build with Maven
+        run: mvn -B clean install
+        # 🔹 Собирает проект и прогоняет все тесты (-B = batch mode, без лишних логов)
+
+      - name: Run tests
+        run: mvn test
+        # 🔹 Явно запускает тесты (если хочешь отделить сборку и тестирование)
