@@ -10,11 +10,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-@Configuration // ⬅️ ОБЯЗАТЕЛЬНО!
+@Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // ⭐ ЭТОТ БИН ОБЯЗАТЕЛЕН ДЛЯ UserServiceImpl ⭐
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -26,12 +25,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // ⭐ ДОБАВЛЯЕМ ПУТИ ДЛЯ HTML-ШАБЛОНОВ: /, /register и /login (если добавите)
+                        .requestMatchers("/", "/register", "/login").permitAll()
+                        // ⭐ ДОБАВЛЯЕМ ПУТИ ДЛЯ СТАТИЧЕСКИХ РЕСУРСОВ (CSS, JS, Images)
+                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+
                         .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable);
 
+        // Разрешение фреймов для H2-консоли (если вы ее используете)
         http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
         return http.build();
