@@ -34,37 +34,27 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // ================== Тест регистрации ==================
-
+    // ✅ Тест регистрации успешной
     @Test
     void testRegisterUser_success() throws Exception {
-        // ⭐ ИСПРАВЛЕНО: Объявляем и инициализируем DTO
-        UserRegistrationDto dto = new UserRegistrationDto("alice", "secret");
+        UserRegistrationDto dto = new UserRegistrationDto("alice", "alice@example.com", "secret");
 
-        // Настраиваем поведение мока: userService.registerUser возвращает нового юзера
         when(userService.registerUser(any(UserRegistrationDto.class)))
                 .thenReturn(new User("alice", "encodedSecret"));
 
-        // Выполняем POST-запрос
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-
-                // Проверяем статус 201 Created (для создания ресурса)
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("User registered successfully"));
 
-                // ⭐ ИСПРАВЛЕНО: Проверяем строковое тело ответа,
-                // если контроллер возвращает "User registered successfully"
-                .andExpect(content().string("User registered successfully"));
-
-        // Проверяем, что метод вызывался 1 раз
         verify(userService, times(1)).registerUser(any(UserRegistrationDto.class));
     }
 
+    // ✅ Тест регистрации — username уже существует
     @Test
     void testRegisterUser_existingUsername() throws Exception {
-        // Здесь DTO уже было, оставляем как есть
-        UserRegistrationDto dto = new UserRegistrationDto("bob", "1234");
+        UserRegistrationDto dto = new UserRegistrationDto("bob", "bob@example.com", "123456");
 
         when(userService.registerUser(any(UserRegistrationDto.class)))
                 .thenThrow(new IllegalArgumentException("Username already exists"));
@@ -73,15 +63,14 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Username already exists"));
+                .andExpect(jsonPath("$.message").value("Username already exists"))
+                .andExpect(jsonPath("$.status").value(400));
     }
 
-    // ================== Тест логина ==================
-
+    // ✅ Тест логина — успешный вход
     @Test
     void testLogin_success() throws Exception {
         UserLoginDto dto = new UserLoginDto("john", "password");
-
         User existingUser = new User("john", "encodedPassword");
 
         when(userService.findByUsername("john")).thenReturn(existingUser);
@@ -91,13 +80,13 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Login successful"));
+                .andExpect(jsonPath("$.message").value("Login successful"));
     }
 
+    // ✅ Тест логина — неверный пароль
     @Test
     void testLogin_wrongPassword() throws Exception {
         UserLoginDto dto = new UserLoginDto("john", "wrong");
-
         User existingUser = new User("john", "encodedPassword");
 
         when(userService.findByUsername("john")).thenReturn(existingUser);
@@ -107,19 +96,35 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(content().string("Invalid credentials"));
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
     }
 
+    // ✅ Тест логина — пользователь не найден
     @Test
     void testLogin_userNotFound() throws Exception {
         UserLoginDto dto = new UserLoginDto("ghost", "123");
-
         when(userService.findByUsername("ghost")).thenReturn(null);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(content().string("Invalid credentials"));
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+    }
+
+    // ✅ Тест регистрации — невалидные поля
+    @Test
+    void testRegisterUser_invalidBody() throws Exception {
+        UserRegistrationDto invalidDto = new UserRegistrationDto("", "invalid_email", "12");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.username").exists())
+                .andExpect(jsonPath("$.password").exists())
+                .andExpect(jsonPath("$.email").exists());
+
+        verify(userService, never()).registerUser(any(UserRegistrationDto.class));
     }
 }
