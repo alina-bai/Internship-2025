@@ -1,4 +1,4 @@
-package newusefy.com.internship;
+package newusefy.com.internship.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 
         @GetMapping("/hello") // --- Это роут то есть /hello откроет текст "Hello world"
         public String hello() {
-            return "Hello World";
+            return "Hello world";
         }
     }
