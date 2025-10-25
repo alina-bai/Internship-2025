@@ -1,27 +1,23 @@
 package newusefy.com.internship.model;
 
-import jakarta.persistence.*; // импортируем JPA аннотации
+import jakarta.persistence.*;
 
-@Entity // помечаем класс как JPA Entity (будет таблицей в базе)
-@Table(name = "users") // имя таблицы в базе данных
+@Entity
+@Table(name = "users")
 public class User {
 
-    @Id // уникальный идентификатор (Primary Key)
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // автоинкремент id
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true) // username не может быть null и должен быть уникальным
+    @Column(nullable = false, unique = true)
     private String username;
-
-    //@Column(nullable = false) // пароль не может быть пустым
-    //private String passwordHash;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     // ===== Конструкторы =====
     public User() {
-        // пустой конструктор нужен JPA
     }
 
     public User(String username, String passwordHash) {
@@ -46,6 +42,7 @@ public class User {
         this.username = username;
     }
 
+    // ⭐ ИСХОДНЫЙ МЕТОД: возвращает хеш
     public String getPasswordHash() {
         return passwordHash;
     }
@@ -53,5 +50,10 @@ public class User {
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
     }
-}
 
+    // ⭐ НОВЫЙ МЕТОД ДЛЯ СОВМЕСТИМОСТИ:
+    // Метод, который ищет AuthController/PasswordEncoder (возвращает то же, что и getPasswordHash)
+    public String getPassword() {
+        return this.passwordHash;
+    }
+}
