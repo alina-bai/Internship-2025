@@ -1,13 +1,28 @@
 package newusefy.com.internship.dto;
 
-import jakarta.validation.constraints.NotBlank;
+// Если вы используете Lombok, вам просто нужно добавить @Data,
+// но я предоставляю явный код для максимальной совместимости.
 
 public class ChatRequestDto {
-    @NotBlank(message = "message cannot be blank")
-    private String message;
+    // ✅ Фронтенд отправляет это поле!
+    private String prompt;
 
-    public ChatRequestDto() {}
-    public ChatRequestDto(String message) { this.message = message; }
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
+    // Конструктор по умолчанию (необходим для Spring/Jackson)
+    public ChatRequestDto() {
+    }
+
+    // Конструктор со всеми полями
+    public ChatRequestDto(String prompt) {
+        this.prompt = prompt;
+    }
+
+    // ✅ Геттер, необходимый для ChatController
+    public String getPrompt() {
+        return prompt;
+    }
+
+    // Сеттер (для Jackson)
+    public void setPrompt(String prompt) {
+        this.prompt = prompt;
+    }
 }
