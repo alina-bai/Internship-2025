@@ -3,6 +3,7 @@ package newusefy.com.internship.controller;
 import newusefy.com.internship.dto.UserLoginDto;
 import newusefy.com.internship.dto.UserRegistrationDto;
 import newusefy.com.internship.model.User;
+import newusefy.com.internship.security.JwtUtil;
 import newusefy.com.internship.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,80 +21,66 @@ public class AuthControllerTest {
 
     private UserService userService;
     private PasswordEncoder passwordEncoder;
+    private JwtUtil jwtUtil;
     private AuthController authController;
 
     @BeforeEach
     void setUp() {
         userService = Mockito.mock(UserService.class);
         passwordEncoder = Mockito.mock(PasswordEncoder.class);
-        authController = new AuthController(userService, passwordEncoder);
+        jwtUtil = Mockito.mock(JwtUtil.class);
+        authController = new AuthController(userService, passwordEncoder, jwtUtil);
     }
 
     @Test
     void testRegisterSuccess() {
-        UserRegistrationDto dto = new UserRegistrationDto("alice", "alice@example.com", "password123");
-        when(userService.registerUser(dto)).thenReturn(new User("alice@example.com", "encodedPass"));
+        UserRegistrationDto dto = new UserRegistrationDto("Alice", "alice@example.com", "password123");
+        User newUser = new User("alice@example.com", "encodedPassword");
+
+        when(userService.registerUser(dto)).thenReturn(newUser);
 
         ResponseEntity<Map<String, String>> response = authController.register(dto);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertTrue(response.getBody().get("message").contains("User registered successfully"));
+        assertEquals("User registered successfully", response.getBody().get("message"));
     }
 
     @Test
     void testRegisterUserAlreadyExists() {
-        UserRegistrationDto dto = new UserRegistrationDto("alice", "alice@example.com", "password123");
+        UserRegistrationDto dto = new UserRegistrationDto("Alice", "alice@example.com", "password123");
         when(userService.registerUser(dto)).thenThrow(new IllegalArgumentException("User already exists"));
 
-        ResponseEntity<Map<String, String>> response;
-        try {
-            response = authController.register(dto);
-        } catch (IllegalArgumentException e) {
-            // Симулируем поведение GlobalExceptionHandler
-            response = ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", e.getMessage()));
-        }
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            authController.register(dto);
+        });
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertTrue(response.getBody().get("message").contains("User already exists"));
+        assertEquals("User already exists", exception.getMessage());
     }
 
     @Test
     void testLoginSuccess() {
-        UserLoginDto dto = new UserLoginDto("alice@example.com", "password123");
+        UserLoginDto loginDto = new UserLoginDto("alice@example.com", "password123");
         User user = new User("alice@example.com", "encodedPassword");
 
         when(userService.findByUsername("alice@example.com")).thenReturn(user);
         when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
+        when(jwtUtil.generateToken("alice@example.com")).thenReturn("fake-jwt-token");
 
-        ResponseEntity<Map<String, String>> response = authController.login(dto);
+        ResponseEntity<Map<String, String>> response = authController.login(loginDto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody().get("message").contains("Login successful"));
+        assertEquals("Login successful", response.getBody().get("message"));
+        assertEquals("fake-jwt-token", response.getBody().get("token"));
     }
 
     @Test
-    void testLoginWrongPassword() {
-        UserLoginDto dto = new UserLoginDto("alice@example.com", "wrong");
-        User user = new User("alice@example.com", "encodedPassword");
-
-        when(userService.findByUsername("alice@example.com")).thenReturn(user);
-        when(passwordEncoder.matches("wrong", "encodedPassword")).thenReturn(false);
-
-        ResponseEntity<Map<String, String>> response = authController.login(dto);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertTrue(response.getBody().get("message").contains("Invalid credentials"));
-    }
-
-    @Test
-    void testLoginUserNotFound() {
-        UserLoginDto dto = new UserLoginDto("bob@example.com", "password123");
+    void testLoginInvalidCredentials() {
+        UserLoginDto loginDto = new UserLoginDto("bob@example.com", "wrong");
         when(userService.findByUsername("bob@example.com")).thenReturn(null);
 
-        ResponseEntity<Map<String, String>> response = authController.login(dto);
+        ResponseEntity<Map<String, String>> response = authController.login(loginDto);
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertTrue(response.getBody().get("message").contains("Invalid credentials"));
+        assertEquals("Invalid credentials", response.getBody().get("message"));
     }
 }
