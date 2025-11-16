@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ChatController.class)
 @Import(ChatControllerTest.MockConfig.class)  // подключаем конфигурацию мока
+
 public class ChatControllerTest {
 
     @TestConfiguration
