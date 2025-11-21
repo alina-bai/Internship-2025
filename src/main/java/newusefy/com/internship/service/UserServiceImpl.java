@@ -26,13 +26,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User registerUser(UserRegistrationDto dto) {
-        // Проверяем — не зарегистрирован ли уже пользователь с таким EMAIL
+        // Проверяем — не зарегистрирован ли уже пользователь с таким EMAIL (используем email как username)
         if (userRepository.existsByUsername(dto.getEmail())) {
             throw new IllegalArgumentException("User already exists");
         }
 
         User user = new User();
+        // Используем email как username, как мы настроили во фронтенде
         user.setUsername(dto.getEmail());
+
+        // ✅ ВОССТАНОВЛЕНИЕ: Возвращаем setPasswordHash, чтобы соответствовать вашей модели User.
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
 
         return userRepository.save(user);
