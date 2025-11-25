@@ -1,96 +1,139 @@
-import React, { useState } from "react";
+// frontend/src/components/Chat.tsx
+
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
-const Chat: React.FC = () => {
+import ChatSidebar from "./ChatSidebar";
+import type { ChatMessageDto } from "../types/chat";
+
+const API_BASE_URL = "http://localhost:8080/api";
+
+type Role = "user" | "ai";
+
+interface ChatMessage {
+  role: Role;
+  text: string;
+}
+
+interface ChatProps {
+  userEmail: string;
+  onLogout: () => void;
+}
+
+const Chat: React.FC<ChatProps> = ({ userEmail, onLogout }) => {
   const [message, setMessage] = useState("");
-  const [chat, setChat] = useState<{ role: string; text: string }[]>([]);
+  const [chat, setChat] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // ⭐ ID текущей сессии чата (null = новый чат)
+  const [chatSessionId, setChatSessionId] = useState<number | null>(null);
+
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Автоскролл вниз при новом сообщении
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chat]);
+
+  // ===============================
+  // 1) ОТПРАВКА СООБЩЕНИЯ
+  // ===============================
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
 
-    const userMessage = { role: "user", text: message };
+    const userMessage: ChatMessage = { role: "user", text: message };
     setChat((prev) => [...prev, userMessage]);
     setMessage("");
     setLoading(true);
 
     try {
       const token = localStorage.getItem("jwtToken");
+
+      if (!token) {
+        setChat((prev) => [
+          ...prev,
+          {
+            role: "ai",
+            text: "⚠️ Ошибка аутентификации. Пожалуйста, войдите снова.",
+          },
+        ]);
+        onLogout();
+        return;
+      }
+
       const response = await axios.post(
-        "http://localhost:8080/api/chat",
-        { message },
+        `${API_BASE_URL}/chat`,
+        {
+          prompt: userMessage.text,
+          chatSessionId: chatSessionId,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            'Cache-Control': 'no-cache', // Для POST-запросов обычно не нужно, но для надежности
           },
         }
       );
 
-      const aiMessage = {
-        role: "ai",
-        text: response.data.reply || response.data || "⚠️ No response from AI",
-      };
+      const replyText: string =
+        response.data?.response ?? "⚠️ Неизвестный ответ от AI";
+      const newSessionId: number | null =
+        response.data?.chatSessionId ?? chatSessionId;
+
+      if (newSessionId != null) {
+        setChatSessionId(newSessionId);
+      }
+
+      const aiMessage: ChatMessage = { role: "ai", text: replyText };
       setChat((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      console.error("Chat error:", error);
+    } catch (error: any) {
+      console.error("❌ Chat error:", error);
       setChat((prev) => [
         ...prev,
-        { role: "ai", text: "⚠️ AI: Something went wrong. Try again." },
+        {
+          role: "ai",
+          text: "⚠️ AI: Что-то пошло не так. Проверьте логи сервера.",
+        },
       ]);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      <header className="bg-blue-600 text-white p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">AI Chat</h1>
-      </header>
+  // ===============================
+  // 2) ПЕРЕКЛЮЧЕНИЕ СЕССИЙ
+  // ===============================
+  const handleSelectSession = async (sessionId: number) => {
+    // ⭐ ЛОГ 1: Главная проверка, дошла ли функция до родителя
+    console.log("✅ КЛИК: Запуск handleSelectSession в Chat.tsx для ID:", sessionId);
 
-      <main className="flex-1 p-4 overflow-y-auto">
-        {chat.length === 0 ? (
-          <p className="text-gray-600 text-center">Start the conversation!</p>
-        ) : (
-          chat.map((msg, index) => (
-            <p
-              key={index}
-              className={`p-2 rounded mb-2 ${
-                msg.role === "user"
-                  ? "bg-blue-100 text-right"
-                  : "bg-green-100 text-left"
-              }`}
-            >
-              {msg.text}
-            </p>
-          ))
-        )}
-        {loading && <p className="text-center text-gray-500">Thinking...</p>}
-      </main>
+    // ⭐ УЛУЧШЕНИЕ: Очищаем старую историю сразу и сбрасываем ID
+    setChat([]);
+    setLoading(true);
+    setChatSessionId(null);
 
-      <form
-        onSubmit={handleSend}
-        className="flex p-4 bg-white border-t border-gray-200"
-      >
-        <input
-          type="text"
-          placeholder="Type your message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="flex-1 border p-2 rounded mr-2"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          disabled={loading}
-        >
-          Send
-        </button>
-      </form>
-    </div>
-  );
-};
+    try {
+      const token = localStorage.getItem("jwtToken");
 
-export default Chat;
+      if (!token) {
+        setChat([{ role: "ai", text: "⚠️ Ошибка аутентификации. Токен отсутствует." }]);
+        onLogout();
+        return;
+      }
+
+      const response = await axios.get<ChatMessageDto[]>(
+        `${API_BASE_URL}/chat/sessions/${sessionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // ⭐ ИСПРАВЛЕНИЕ 304: Запрещаем кеширование, чтобы всегда получать 200 OK
+            'Cache-Control': 'no-cache',
+          },
+        }
+      );
+
+      const messagesFromServer = response.data;
+
+      // ⭐ ЛО
