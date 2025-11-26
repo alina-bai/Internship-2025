@@ -28,3 +28,434 @@ The goal is to have the project managed under Git, organized into logical packag
 This week is dedicated to building the foundational backend components for user authentication. The primary goal is to implement the business logic required to manage user data,
 create secure endpoints for user registration and login, and integrate a robust password hashing mechanism to protect user credentials. By the end of this week, the application will have functional, albeit not fully secured,
 API endpoints for creating new users and verifying their credentials.
+
+### **#Week 4:** Testing, CI/CD, and Basic Frontend Integration
+Phase 1: Foundation & Setup
+
+This week focused on establishing a solid development workflow by adding unit testing, CI/CD automation, and a minimal frontend layer for user registration.
+The backend authentication logic created earlier now became fully testable, automated, and connected to a simple UI.
+
+🔥 Completed Work This Week
+1. Unit Testing Setup
+
+Added JUnit 5 and Mockito to the project dependencies (Maven/Gradle).
+
+Ensured proper test scopes (testImplementation, etc.).
+
+Key outcomes:
+✔ Test framework working
+✔ Able to run isolated unit tests for services and controllers
+
+2. UserService Unit Tests
+
+Created UserServiceImplTest.java covering:
+
+registerUser() → successful registration + duplicate username
+
+findByUsername() → existing + non-existing users
+
+Mocked:
+
+UserRepository
+
+PasswordEncoder
+
+Key outcomes:
+✔ Business logic tested
+✔ Password encoding and repository interactions verified
+
+3. AuthController Unit Tests
+
+Created AuthControllerTest.java using MockMvc:
+
+Tested /api/auth/register
+
+Tested /api/auth/login
+
+Verified:
+
+200 OK for valid requests
+
+400 Bad Request for invalid data
+
+401 Unauthorized for wrong credentials
+
+Key outcomes:
+✔ API behavior validated
+✔ Authentication flow tested end-to-end
+
+4. CI/CD Pipeline (GitHub Actions)
+
+Added a basic CI workflow that triggers on:
+
+push
+
+pull_request
+
+Pipeline steps:
+
+Checkout code
+
+Set up JDK
+
+Build project (mvn clean install)
+
+Run tests
+
+Key outcomes:
+✔ Every commit now automatically runs tests
+✔ CI ensures project stability
+
+5. Basic Frontend (Thymeleaf)
+
+Added Thymeleaf dependency
+
+Created index.html and register.html
+
+Implemented a simple registration form with:
+
+Basic CSS
+
+Navigation
+
+Form submission to /api/auth/register
+
+Key outcomes:
+✔ Fully working registration UI
+✔ Backend registration connected to HTML form
+
+Week 4 Deliverable
+
+A fully tested backend with:
+
+✅ UserService tests
+✅ AuthController tests
+✅ Working CI/CD pipeline
+✅ Basic frontend (index + register pages)
+✅ Better validation and error handling for authentication
+
+### **#Week 1:**Advanced Frontend Integration & Validation
+Phase 1: Foundation & Setup
+
+Week 5 expanded the frontend logic, improved form behavior, added validation, and enhanced the backend error-handling system.
+
+🔥 Completed Work This Week
+1. Thymeleaf Integration
+
+Confirmed Thymeleaf compatibility with Spring Boot
+
+Added download & rendering for templates via:
+
+FrontendController.java
+
+GET / → index.html
+
+GET /register → register.html
+
+Key outcomes:
+✔ Fully structured view layer
+✔ Clean routing for frontend pages
+
+2. Improved Registration Form
+
+Enhanced register.html:
+
+Linked form to /api/auth/register (POST)
+
+Added Bootstrap/Tailwind/basic CSS (optional)
+
+Added form field bindings with Thymeleaf
+
+Key outcomes:
+✔ Functional registration UI
+✔ Server + client validation
+
+3. Client-Side Validation
+
+Implemented simple JS validation for:
+
+Empty fields
+
+Password length rules
+
+Error messages displayed instantly
+
+Key outcomes:
+✔ Better user experience
+✔ Reduced invalid API calls
+
+4. Backend Validation (JSR-303 Bean Validation)
+
+Added validation annotations to UserRegistrationDto
+
+Updated AuthController.register() to use:
+
+@Valid
+
+BindingResult
+
+Returned clear 400 responses for invalid input
+
+Key outcomes:
+✔ Strong backend validation
+✔ Safe and correct data passed to service layer
+
+5. Showing Validation Errors in Templates
+
+register.html now displays server-side errors:
+
+Invalid fields
+
+Duplicate usernames
+
+Password validation errors
+
+Key outcomes:
+✔ User receives meaningful feedback
+✔ Clean error UI
+
+6. Success Messages
+
+Added redirect + flash attributes:
+
+After successful registration → show success message
+
+Improved user flow and clarity
+
+7. Refactored AuthController Error Handling
+
+Added centralized exception handling with:
+
+@ControllerAdvice
+
+@ExceptionHandler
+
+All errors now follow consistent JSON/API structure
+
+Key outcomes:
+✔ Standardized error responses
+✔ Cleaner controller code
+
+Week 5 Deliverable
+
+By the end of Week 5, the application included:
+
+✅ Fully interactive registration UI
+✅ Client-side + server-side validation
+✅ Proper error display in HTML
+✅ Centralized exception handling
+✅ Clean frontend-backend integration
+
+### **#Week 6-7:**  Secure AI Chat Integration (Backend + Frontend)
+Phase 2: Core Functionality – Tutoring Interaction
+
+This week introduces the secure AI-powered chat system, connecting the React frontend with the Spring Boot backend and the external AI API (Gemini/OpenAI).
+The main goals were:
+
+create a backend endpoint to send messages to AI
+
+protect the chat endpoint using JWT
+
+connect the React chat UI with the backend
+
+ensure only authenticated users can access the chat
+
+write backend and frontend tests
+
+This was the foundation of the application's intelligence and user interaction layer.
+
+📌 What Was Built This Week
+1. Global CORS Configuration (Backend)
+
+Implemented a global CorsConfig to allow requests from the React dev server:
+
+Allowed origins: http://localhost:3000
+
+Allowed methods: GET, POST, PUT, DELETE, OPTIONS
+
+Exposed headers for JWT authentication
+
+Added WebMvcConfigurer bean
+
+🔍 Key Concept:
+CORS controls which websites can talk to your backend. Incorrect CORS = frontend cannot access API.
+
+2. Secure API Key Management
+
+Added AI API key into application.properties
+
+Accessed it using @Value
+
+Added application.properties to .gitignore so secrets never enter GitHub
+
+For production: API key will be loaded via environment variables
+
+🔍 Key Concept:
+Never store API keys on frontend or public repositories. Backend must be the only place that knows the key.
+
+3. ChatController – New Chat Endpoint
+
+Created a new POST endpoint:
+
+POST /api/chat
+
+
+Accepts user's message in a ChatRequestDto
+
+Delegates logic to ChatService
+
+Returns structured response (ChatResponseDto)
+
+🔍 Key Concept:
+Controllers should be thin — only forward data to the service layer.
+
+4. Securing /api/chat with Spring Security
+
+Updated SecurityConfig:
+
+/api/auth/** → public
+
+/api/chat → authenticated only
+
+JWT filter placed before username/password filter
+
+Stateless sessions (perfect for token-based apps)
+
+🔍 Key Concept:
+Every chat message requires a valid JWT → users cannot access chat without logging in.
+
+5. Unit Tests for ChatController
+
+Using MockMvc with Spring Security:
+
+Tested:
+
+401 Unauthorized if no JWT provided
+
+200 OK for valid JWT
+
+400 / invalid input validation
+
+🔍 Key Concept:
+MockMvc simulates real HTTP requests to your API.
+
+6. Unit Tests for ChatService
+
+Mocked external API call using Mockito:
+
+Simulated AI response
+
+Tested request-body creation
+
+Verified error handling
+
+Ensured service logic works without calling real API
+
+🔍 Key Concept:
+External APIs must never be tested live — tests should be stable and offline.
+
+7. Protected Routing (Frontend)
+
+Created a ProtectedRoute:
+
+Checks JWT token in localStorage
+
+If no token → redirects to /login
+
+Shows message: "You must be logged in to access the chat"
+
+🔍 Key Concept:
+Frontend security = routing + token validation.
+
+8. Chat Component UI (Frontend)
+
+Built a complete chat interface:
+
+Messages area
+
+Text input + Send button
+
+Layout using Tailwind
+
+Scroll-to-bottom logic
+
+Distinct UI for user vs AI messages
+
+🔍 Key Concept:
+React state manages message history dynamically.
+
+9. Authenticated API Integration
+
+Chat component now:
+
+Sends POST /api/chat including JWT in Authorization: Bearer ...
+
+Uses useState for messages
+
+Shows user’s message immediately (optimistic UI)
+
+Adds AI reply when backend responds
+
+🔍 Key Concept:
+Axios must always attach JWT to secure endpoints.
+
+10. Dynamic Message Rendering
+
+Every message rendered with unique key
+
+Scrolls down automatically on new messages
+
+React efficiently re-renders only changed elements
+
+🔍 Key Concept:
+Keys improve React’s performance and prevent re-render bugs.
+
+11. Unit & Integration Tests (Frontend)
+
+Created tests with Jest + React Testing Library:
+
+Tests include:
+
+Rendering chat UI
+
+Simulating typing and sending messages
+
+Mocking Axios
+
+Verifying Authorization header is included
+
+Ensuring AI response appears on screen
+
+🔍 Key Concept:
+Mocking avoids calling real backend during tests.
+
+🎯 Deliverables for Week 6
+
+By the end of Week 6, your application had:
+
+✅ A fully working, authenticated AI chat
+✅ Backend protection with Spring Security + JWT
+✅ Secure API key handling
+✅ React ProtectedRoute
+✅ Full chat interface
+✅ Integration with backend AI endpoint
+✅ Unit and integration tests for backend and frontend
+🧠 Key Concepts Learned This Week
+Concept	Meaning
+CORS	Security rule for cross-origin requests between frontend & backend
+DTO	Clean, structured objects for communication between layers
+JWT Authentication	Token-based security for protecting endpoints
+MockMvc	Tool to test Spring controllers via HTTP simulation
+Mockito	Library to mock external dependencies (e.g., API clients)
+ProtectedRoute	React component that guards pages for logged-in users
+Optimistic UI Update	Rendering user's message before backend response
+Axios with JWT	Automatically attaching token for secure calls
+📦 Summary
+
+Week 6 laid the foundation of the entire AI experience in your app:
+
+✔ Secure
+✔ Fully tested
+✔ Well structured
+✔ Real-time chat interaction implemented
+✔ Clean integration between frontend and backend
