@@ -26,34 +26,46 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                // Отключаем CSRF
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // Разрешаем CORS
-                .cors(Customizer.withDefaults())
+                // 🔥 Правильный CORS для запросов с фронта
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new org.springframework.web.cors.CorsConfiguration();
+                    config.setAllowedOrigins(java.util.List.of("http://localhost:5173"));
+                    config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
 
-                // Отключаем управление сессиями для REST API с JWT
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
-                // Настраиваем доступ к эндпоинтам
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Регистрация и логин открыты
+                        .requestMatchers(
+                                "/", "/index", "/hello", "/error",
+                                "/css/**", "/js/**", "/images/**", "/static/**", "/webjars/**"
+                        ).permitAll()
 
-                        // ✅ ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ 403: Упрощаем до минимального требования:
-                        // Требуем, чтобы пользователь был просто аутентифицирован (имел валидный токен)
+                        // открытая аутентификация
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // защищённый чат
                         .requestMatchers("/api/chat/**").authenticated()
 
-                        // Защищаем все остальные пути
+                        // всё остальное — тоже защищено
                         .anyRequest().authenticated()
                 );
 
-        // Регистрируем ваш JWT-фильтр
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+
 }
