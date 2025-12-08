@@ -32,9 +32,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
-            // ⭐ ИСПРАВЛЕНИЕ: Запрещаем кеширование для обхода 304 Not Modified
-            'Cache-Control': 'no-cache',
-          },
+          }
+
         });
 
         if (!response.ok) {
