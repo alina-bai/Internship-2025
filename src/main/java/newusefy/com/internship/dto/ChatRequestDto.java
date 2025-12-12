@@ -1,28 +1,34 @@
 package newusefy.com.internship.dto;
 
-// Если вы используете Lombok, вам просто нужно добавить @Data,
-// но я предоставляю явный код для максимальной совместимости.
-
 public class ChatRequestDto {
-    // ✅ Фронтенд отправляет это поле!
+
+    // сообщение пользователя
     private String prompt;
 
-    // Конструктор по умолчанию (необходим для Spring/Jackson)
-    public ChatRequestDto() {
-    }
+    // если null → создаём новую сессию
+    // если есть ID → продолжаем существующую
+    private Long chatSessionId;
 
-    // Конструктор со всеми полями
-    public ChatRequestDto(String prompt) {
+    public ChatRequestDto() {}
+
+    public ChatRequestDto(String prompt, Long chatSessionId) {
         this.prompt = prompt;
+        this.chatSessionId = chatSessionId;
     }
 
-    // ✅ Геттер, необходимый для ChatController
     public String getPrompt() {
         return prompt;
     }
 
-    // Сеттер (для Jackson)
     public void setPrompt(String prompt) {
         this.prompt = prompt;
+    }
+
+    public Long getChatSessionId() {
+        return chatSessionId;
+    }
+
+    public void setChatSessionId(Long chatSessionId) {
+        this.chatSessionId = chatSessionId;
     }
 }
