@@ -1,6 +1,10 @@
 package newusefy.com.internship.model;
 
 import jakarta.persistence.*;
+import newusefy.com.internship.entity.Course;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -56,4 +60,13 @@ public class User {
     public String getPassword() {
         return this.passwordHash;
     }
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_course",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private List<Course> enrolledCourses = new ArrayList<>();
+
 }
