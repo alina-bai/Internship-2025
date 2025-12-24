@@ -1,0 +1,8 @@
+package newusefy.com.internship.repository;
+
+import newusefy.com.internship.entity.Section;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SectionRepository extends JpaRepository<Section, Long> {
+}
+
