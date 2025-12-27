@@ -28,4 +28,6 @@ public class Course {
     @ManyToMany(mappedBy = "enrolledCourses")
     private List<User> users = new ArrayList<>();
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Section> sections = new ArrayList<>();
 }
