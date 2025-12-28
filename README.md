@@ -461,100 +461,61 @@ Week 6-7 laid the foundation of the entire AI experience in your app:
 ✔ Clean integration between frontend and backend
 
 
-# **Week 8 — Persistent Chat, History Sidebar & Backend Testing**
+# **Week 8 & 9 — Persistent Chat, History Sidebar & Backend Testing**
 
 Goal: Transform the simple stateless chat into a fully persistent, multi-session AI chat system with saved history, session switching, and backend unit tests.
 
 ✅ Overview of What Was Built This Week
-
 During Week 8, we upgraded the entire chat architecture:
-
 ⭐ Backend
-
 Introduced Chat Sessions (ChatSession entity)
-
 Enabled saving every message (ChatMessage entity)
-
 Implemented session switching
-
 Implemented chat history endpoint
-
 Added security (restricted endpoints)
-
 Added unit tests for repositories & service layer
 
 ⭐ Frontend
-
 Implemented Sidebar with chat history
-
 Clicking a session now loads its messages
-
-Sending a message either
-
-continues existing session
-
-or automatically creates a new one
-
+Sending a message either continues existing session or automatically creates a new one
 Added loading states, auto-scroll, UI polishing
 
 Typed endpoints using TypeScript DTOs
-
 This turned the project into a real-world, scalable, multi-chat AI application.
 
 🧠 1. Backend Data Model
 ChatSession.java
-
 Represents a single chat session.
 Fields:
-
-id
-
-title
-
-createdAt
-
-updatedAt
-
-user
-
-messages (relation)
-
+*id
+*title
+*createdAt
+*updatedAt
+*user
+*messages (relation)
 Purpose:
-
 ✔ Stores basic metadata about a chat
 ✔ Allows a user to create multiple chats
 ✔ Orders chats by last activity (for sidebar)
 
 ChatMessage.java
-
 Represents one message in a conversation.
 Fields:
-
 id
-
 session
-
 role: "user" | "ai"
-
 content
-
 createdAt
-
 Purpose:
-
 ✔ Saves both user and AI replies
 ✔ Allows full reconstruction of the conversation
 
 📡 2. Chat Endpoints Added
 POST /api/chat
-
 Sends a message to AI.
 Backend decides:
-
-Create a new session
-
-OR continue existing session
-
+Create a new session OR continue existing session
 Response format:
 {
 "response": "AI text",
@@ -574,106 +535,68 @@ Returns all messages for a given chat session.
 Used when switching between chats.
 
 🔐 3. Security Improvements
-
 Updated SecurityConfig to:
-
 Allow unauthenticated access only to /api/auth/**
-
 Require valid JWT for /api/chat/**
-
 Enable CORS so frontend can talk to backend
-
 Register JWTAuthFilter before Spring login filter
-
 This ensures chat data is accessible only by the correct user.
 
 🧩 4. Frontend Updates
 ChatSidebar.tsx
-
 Loads session list
-
 Highlights active session
-
 Calls parent when a session is selected
-
 Chat.tsx
-
 Stores active session in state
-
 Loads messages when switching sessions
-
 Sends new messages with chatSessionId
-
 Updates chat window with previous history
-
 Auto-scrolls to bottom
 
 TypeScript DTOs
 ChatSessionSummary
 ChatMessageDto
 
-
 These ensure strong typing and no bugs.
 
 🧪 5. Test Coverage
-
-We added tests for:
-
+added tests for:
 ✔ ChatMessageRepositoryTest
-
 Save messages
-
 Load messages
-
 Messages linked to session
 
 ✔ ChatSessionRepositoryTest
-
 Save sessions
-
 Query sessions by user
-
 Sort by updatedAt
 
 ✔ ChatServiceTest
-
 Handling empty message
-
 Mocking Gemini API
-
 Ensuring JSON response format
-
 This ensures persistence and logic work even after future changes.
 
 ⚙️ 6. Core Architectural Concepts (Explained Simply)
 1. Persistent Chat
-
 Every message goes into PostgreSQL → sessions persist permanently.
 
 2. Session Switching
-
 Frontend can open any historical chat and continue it.
 Backend ensures the session belongs to the logged-in user.
 
 3. DTO Mapping
-
 Entities → DTOs → JSON → React
 This keeps backend logic clean and frontend readable.
 
-4. Backend Testing
-
-We used:
-
+4. Backend Testing used:
 @DataJpaTest for repositories
-
 Mocking for service AI calls
-
 This is how real companies test backend logic.
 
 🚀 Result of Week 8
-
 By the end of Week 8, your app supports:
-
 ✔ Persistent chat
 ✔ Session history
 ✔ Switching between chats
@@ -683,3 +606,63 @@ By the end of Week 8, your app supports:
 ✔ Unit tests for correctness
 
 This is now a production-grade AI chat system.
+
+
+**📘 Week 10 — Chat Persistence (Spring Boot)**
+📌 Overview
+In Week 10, chat persistence was implemented for a Spring Boot application.
+The goal was to store chat conversations in a database and securely retrieve user-specific chat history using JWT authentication.
+
+🎯 Objectives
+Persist chat sessions and messages using JPA
+Associate chats with authenticated users
+Retrieve chat history and messages
+Restrict access to user-owned chat sessions
+Follow layered backend architecture
+
+📦 Data Model
+ChatSession
+Represents a single chat conversation
+Linked to one authenticated user
+Contains multiple chat messages
+
+ChatMessage
+Represents a single message
+Role-based (user / ai)
+Supports large text content
+
+Relationships
+User → ChatSession (One-to-Many)
+ChatSession → ChatMessage (One-to-Many)
+
+🔁 Core Functionality
+Create new chat sessions
+Continue existing chat sessions
+Store user and AI messages
+Generate chat titles automatically
+Retrieve chat history
+Retrieve messages by session
+Validate chat ownership
+
+🔐 Security
+JWT-based authentication
+Authenticated user resolved via Principal
+Backend-level ownership validation
+Users can only access their own chats
+
+🧪 Verification
+Chat sessions persist correctly
+Messages stored in correct order
+Unauthorized access is blocked
+Database relations created properly
+
+📚 What I Learned
+JPA entity relationships
+Chat persistence design
+DTO usage for API safety
+Transactional service logic
+Secure data access with JWT
+Clean backend layering
+✅ Result
+Chat history persistence successfully implemented and secured.
+The backend is ready for further extensions (courses, sections, pagination).
