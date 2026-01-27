@@ -21,4 +21,9 @@ public class Section {
     @ManyToOne
     @JoinColumn(name = "course_id") // foreign key
     private Course course;
+
+    @OneToOne
+    @JoinColumn(name = "chat_session_id")
+    private ChatSession chatSession;
+
 }
