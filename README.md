@@ -608,7 +608,8 @@ By the end of Week 8, your app supports:
 This is now a production-grade AI chat system.
 
 
-**📘 Week 10 — Chat Persistence (Spring Boot)**
+##   **📘 Week 10 — Chat Persistence (Spring Boot)**
+
 📌 Overview
 In Week 10, chat persistence was implemented for a Spring Boot application.
 The goal was to store chat conversations in a database and securely retrieve user-specific chat history using JWT authentication.
@@ -666,3 +667,66 @@ Clean backend layering
 ✅ Result
 Chat history persistence successfully implemented and secured.
 The backend is ready for further extensions (courses, sections, pagination).
+
+##### ********Week 11–12: Tutoring Interaction & AI Assistant Integration**
+
+## 🎯 Goal******
+
+Implement an AI-powered tutoring experience integrated with course content.
+Each course section displays Markdown-based lecture notes and has its own AI chat session for contextual learning.
+
+🧩 Implemented Features
+
+Course Sections UI
+
+Course sections are fetched from the backend
+
+Lecture content is rendered from Markdown (react-markdown)
+
+Video content replaced with text-based lecture notes
+
+Section-based AI Assistant
+
+AI assistant is displayed on the right side of the section page (IDE copilot-like UI)
+
+Each section has its own isolated chat session
+
+Context-aware AI Interaction
+
+When a user asks a question, the current section’s content is appended to the prompt
+
+AI answers strictly based on the opened section
+
+A new chat session is created on the first question per section
+
+🏗️ Frontend Architecture
+
+SectionSidebar — displays course sections
+
+SectionContent — renders Markdown lecture notes
+
+SectionChat — AI assistant bound to a section
+
+ChatService (API) — sends section content + user question to backend
+
+🔐 Security & Auth
+
+All requests are protected via JWT
+
+User identity is resolved on backend using Principal
+
+📌 Key Concepts
+
+Markdown rendering (react-markdown)
+
+Section-scoped chat sessions
+
+Context injection into LLM prompts
+
+Separation of concerns (content vs AI interaction)
+
+✅ Status
+
+✔ Core functionality completed
+✔ Ready for data seeding (courses & sections)
+✔ Prepared for future UX improvements
