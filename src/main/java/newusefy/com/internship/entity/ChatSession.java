@@ -24,10 +24,21 @@ public class ChatSession {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Теперь ChatSession связывается с твоим User из пакета model
     @ManyToOne
     private User user;
 
-    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    // 🔥 привязка к лекции (section)
+    @ManyToOne
+    @JoinColumn(name = "section_id")
+    private Section section;
+
+    // 🔥 активный чат
+    private boolean active = true;
+
+    @OneToMany(
+            mappedBy = "session",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<ChatMessage> messages = new ArrayList<>();
 }
