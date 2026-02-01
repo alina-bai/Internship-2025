@@ -20,3 +20,4 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
     // ⭐ может пригодиться для админки / дебага
     List<ChatSession> findBySectionId(Long sectionId);
 }
+
