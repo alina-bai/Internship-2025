@@ -2,12 +2,16 @@ package newusefy.com.internship.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import newusefy.com.internship.dto.*;
+import newusefy.com.internship.dto.ChatRequestDto;
+import newusefy.com.internship.dto.ChatResponseDto;
+import newusefy.com.internship.dto.ChatMessageDto;
 import newusefy.com.internship.entity.ChatMessage;
 import newusefy.com.internship.entity.ChatSession;
+import newusefy.com.internship.entity.Section;
 import newusefy.com.internship.model.User;
 import newusefy.com.internship.repository.ChatMessageRepository;
 import newusefy.com.internship.repository.ChatSessionRepository;
+import newusefy.com.internship.repository.SectionRepository;
 import newusefy.com.internship.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -29,6 +33,7 @@ public class ChatService {
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final SectionRepository sectionRepository;
 
     @Value("${gemini.api.key}")
     private String apiKey;
@@ -36,91 +41,103 @@ public class ChatService {
     @Value("${gemini.api.url}")
     private String apiUrl;
 
-    public ChatService(RestTemplate restTemplate,
-                       ChatSessionRepository chatSessionRepository,
-                       ChatMessageRepository chatMessageRepository,
-                       UserRepository userRepository) {
+    public ChatService(
+            RestTemplate restTemplate,
+            ChatSessionRepository chatSessionRepository,
+            ChatMessageRepository chatMessageRepository,
+            UserRepository userRepository
+    ) {
         this.restTemplate = restTemplate;
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.userRepository = userRepository;
+        this.sectionRepository = sectionRepository;
     }
 
     // ======================================================
-    // 1. ОБРАБОТКА ЧАТА
+    // 1. ОСНОВНОЙ ЧАТ (Week 13 logic)
     // ======================================================
 
     @Transactional
     public ChatResponseDto handleChat(ChatRequestDto request, Principal principal) {
 
-        String username = principal.getName();              // ← берем username
-        User user = userRepository.findByUsername(username) // ← ищем User в БД
-                .orElseThrow(() -> new IllegalStateException("User not found: " + username));
+        User user = getUser(principal);
 
         ChatSession session;
 
-        if (request.getChatSessionId() == null) {
-            // новая сессия
-            session = createNewSession(request.getPrompt(), user);
-        } else {
-            // продолжаем существующую
+        // 👉 если пользователь выбрал конкретный tab
+        if (request.getChatSessionId() != null) {
             session = validateSessionOwner(request.getChatSessionId(), user);
+        } else {
+            // 👉 иначе ищем активный чат в section
+            session = chatSessionRepository
+                    .findByUserIdAndSectionIdAndActiveTrue(
+                            user.getId(),
+                            request.getSectionId()
+                    )
+                    .orElseGet(() ->
+                            createNewSectionSession(user, request.getSectionId())
+                    );
         }
 
-        // сохраняем сообщение пользователя
+        // сохраняем вопрос пользователя
         saveMessage(session, "user", request.getPrompt());
 
-        // получаем ответ AI
-        String aiText = generateAnswer(request.getPrompt());
+        // формируем prompt с контентом лекции
+        String fullPrompt = buildPromptWithSection(
+                request.getSectionId(),
+                request.getPrompt()
+        );
 
-        // сохраняем сообщение ИИ
-        saveMessage(session, "ai", aiText);
+        // ответ AI
+        String aiAnswer = generateAnswer(fullPrompt);
 
-        // обновляем updatedAt
+        // сохраняем ответ AI
+        saveMessage(session, "ai", aiAnswer);
+
         session.setUpdatedAt(LocalDateTime.now());
         chatSessionRepository.save(session);
 
-        return new ChatResponseDto(aiText, session.getId());
+        return new ChatResponseDto(aiAnswer, session.getId());
     }
 
     // ======================================================
-    // 2. ИСТОРИЯ СЕССИЙ
+    // 2. СОЗДАНИЕ НОВОГО TAB (НОВЫЙ ЧАТ В SECTION)
     // ======================================================
 
-    public List<ChatSessionSummaryDto> getUserSessions(Principal principal) {
+    @Transactional
+    public Long startNewChat(Long sectionId, Principal principal) {
 
-        String username = principal.getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException("User not found: " + username));
+        User user = getUser(principal);
 
-        var sessions = chatSessionRepository.findByUserIdOrderByUpdatedAtDesc(user.getId());
+        // деактивируем текущий активный чат
+        chatSessionRepository
+                .findByUserIdAndSectionIdAndActiveTrue(user.getId(), sectionId)
+                .ifPresent(session -> {
+                    session.setActive(false);
+                    chatSessionRepository.save(session);
+                });
 
-        List<ChatSessionSummaryDto> result = new ArrayList<>();
-
-        for (ChatSession s : sessions) {
-            result.add(new ChatSessionSummaryDto(
-                    s.getId(),
-                    s.getTitle(),
-                    s.getUpdatedAt()
-            ));
-        }
-
-        return result;
+        ChatSession newSession = createNewSectionSession(user, sectionId);
+        return newSession.getId();
     }
+
+    // ======================================================
+    // 3. ПОЛУЧЕНИЕ СООБЩЕНИЙ ЧАТА
+    // ======================================================
 
     public List<ChatMessageDto> getSessionMessages(Long sessionId, Principal principal) {
 
-        String username = principal.getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-
+        User user = getUser(principal);
         ChatSession session = validateSessionOwner(sessionId, user);
 
-        var msgs = chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+        List<ChatMessage> messages =
+                chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
 
-        List<ChatMessageDto> dtos = new ArrayList<>();
-        for (ChatMessage m : msgs) {
-            dtos.add(new ChatMessageDto(
+        List<ChatMessageDto> result = new ArrayList<>();
+
+        for (ChatMessage m : messages) {
+            result.add(new ChatMessageDto(
                     m.getId(),
                     m.getRole(),
                     m.getContent(),
@@ -128,16 +145,21 @@ public class ChatService {
             ));
         }
 
-        return dtos;
+        return result;
     }
 
     // ======================================================
-    // 3. ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    // 4. ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
     // ======================================================
+
+    private User getUser(Principal principal) {
+        return userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 
     private ChatSession validateSessionOwner(Long sessionId, User user) {
         ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+                .orElseThrow(() -> new RuntimeException("Chat session not found"));
 
         if (!session.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Access denied");
@@ -146,12 +168,18 @@ public class ChatService {
         return session;
     }
 
-    private ChatSession createNewSession(String prompt, User user) {
+    private ChatSession createNewSectionSession(User user, Long sectionId) {
+
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Section not found"));
+
         ChatSession session = new ChatSession();
         session.setUser(user);
+        session.setSection(section);
+        session.setActive(true);
+        session.setTitle("New chat");
         session.setCreatedAt(LocalDateTime.now());
         session.setUpdatedAt(LocalDateTime.now());
-        session.setTitle(generateTitle(prompt));
 
         return chatSessionRepository.save(session);
     }
@@ -165,20 +193,28 @@ public class ChatService {
         chatMessageRepository.save(msg);
     }
 
-    private String generateTitle(String prompt) {
-        if (prompt == null || prompt.isBlank()) return "New chat";
-        return prompt.length() > 40 ? prompt.substring(0, 40) + "..." : prompt;
+    private String buildPromptWithSection(Long sectionId, String question) {
+
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Section not found"));
+
+        return """
+                You are an AI tutor.
+                Use ONLY the lecture content below to answer.
+
+                Lecture content:
+                %s
+
+                Student question:
+                %s
+                """.formatted(section.getContent(), question);
     }
 
     // ======================================================
-    // 4. G E M I N I  API
+    // 5. GEMINI API
     // ======================================================
 
-    public String generateAnswer(String prompt) {
-
-        if (prompt == null || prompt.isBlank()) {
-            return "Сообщение не может быть пустым.";
-        }
+    public  String generateAnswer(String prompt) {
 
         try {
             String finalUrl = apiUrl + "?key=" + apiKey;
@@ -187,12 +223,12 @@ public class ChatService {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             String body = """
-            {
-              "contents": [{
-                "parts": [{ "text": "%s" }]
-              }]
-            }
-            """.formatted(prompt.replace("\"", "\\\""));
+                    {
+                      "contents": [{
+                        "parts": [{ "text": "%s" }]
+                      }]
+                    }
+                    """.formatted(prompt.replace("\"", "\\\""));
 
             HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
@@ -200,18 +236,16 @@ public class ChatService {
                     restTemplate.exchange(finalUrl, HttpMethod.POST, entity, String.class);
 
             JsonNode root = objectMapper.readTree(response.getBody());
-            JsonNode textNode =
-                    root.path("candidates").get(0)
-                            .path("content")
-                            .path("parts").get(0)
-                            .path("text");
-
-            if (textNode.isTextual()) return textNode.asText();
-
-            return "⚠️ AI ответ не распознан";
+            return root.path("candidates")
+                    .get(0)
+                    .path("content")
+                    .path("parts")
+                    .get(0)
+                    .path("text")
+                    .asText();
 
         } catch (Exception e) {
-            return "Ошибка AI: " + e.getMessage();
+            return "AI error: " + e.getMessage();
         }
     }
 }
