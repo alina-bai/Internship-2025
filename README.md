@@ -730,3 +730,21 @@ Separation of concerns (content vs AI interaction)
 ✔ Core functionality completed
 ✔ Ready for data seeding (courses & sections)
 ✔ Prepared for future UX improvements
+
+## Week 13 – AI Tutoring Interaction (Backend)
+
+Implemented AI assistant backend logic scoped per course section.
+
+### Features
+- AI answers user questions about section content
+- Persistent chat history stored in database
+- Chats are linked to specific sections
+- Multiple chat sessions (tabs) supported per section
+
+### Tech
+- Spring Boot
+- JPA / Hibernate
+- REST API
+- Gemini AI integration
+
+This completes Phase 2: Core Tutoring Interaction.
