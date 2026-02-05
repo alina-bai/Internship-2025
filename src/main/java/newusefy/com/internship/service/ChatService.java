@@ -33,7 +33,7 @@ public class ChatService {
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
-    private final SectionRepository sectionRepository;
+    private  SectionRepository sectionRepository = null;
 
     @Value("${gemini.api.key}")
     private String apiKey;
