@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/chat")
-public class ChatController {
+class ChatController {
 
     private final ChatService chatService;
 
