@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import newusefy.com.internship.dto.ChatRequestDto;
 import newusefy.com.internship.dto.ChatResponseDto;
 import newusefy.com.internship.dto.ChatMessageDto;
+import newusefy.com.internship.dto.ChatSessionSummaryDto;
 import newusefy.com.internship.entity.ChatMessage;
 import newusefy.com.internship.entity.ChatSession;
 import newusefy.com.internship.entity.Section;
@@ -248,4 +249,9 @@ public class ChatService {
             return "AI error: " + e.getMessage();
         }
     }
+
+    public List<ChatSessionSummaryDto> getUserSessions(Principal principal) {
+        return List.of();
+    }
+
 }
