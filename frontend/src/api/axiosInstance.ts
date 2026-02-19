@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// ✅ Создаём экземпляр axios с базовым URL вашего backend'а
+// ✅ Создаём экземпляр axios с базовым URL вашего backend
 const api = axios.create({
   baseURL: "http://localhost:8080/api", // замени на адрес сервера, если нужно
   headers: {
