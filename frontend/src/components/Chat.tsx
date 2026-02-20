@@ -1,10 +1,16 @@
 // frontend/src/components/Chat.tsx
 
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
+// путь подстрой под свою структуру
+
 
 import ChatSidebar from "./ChatSidebar";
 import type { ChatMessageDto } from "../types/chat";
+
+
+await api.post("/chat", {...})
+await api.get(`/chat/sessions/${sessionId}`)
 
 const API_BASE_URL = "http://localhost:8080/api";
 
