@@ -1,5 +1,10 @@
 package newusefy.com.internship.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class ChatRequestDto {
 
     // сообщение пользователя
@@ -20,27 +25,4 @@ public class ChatRequestDto {
         this.sectionId = sectionId;
     }
 
-    public String getPrompt() {
-        return prompt;
-    }
-
-    public void setPrompt(String prompt) {
-        this.prompt = prompt;
-    }
-
-    public Long getChatSessionId() {
-        return chatSessionId;
-    }
-
-    public void setChatSessionId(Long chatSessionId) {
-        this.chatSessionId = chatSessionId;
-    }
-
-    public Long getSectionId() {
-        return sectionId;
-    }
-
-    public void setSectionId(Long sectionId) {
-        this.sectionId = sectionId;
-    }
 }
