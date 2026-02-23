@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { ChatSessionSummary } from "../types/chat";
-
-const API_BASE_URL = "http://localhost:8080/api";
+import api from "../api/axiosInstance";
 
 interface ChatSidebarProps {
   selectedSessionId: number | null;
@@ -13,7 +12,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectSession,
 }) => {
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,33 +21,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem("jwtToken");
-        if (!token) {
-          setError("Нет токена. Войдите заново.");
-          return;
-        }
+        const response = await api.get("/chat/sessions");
 
-        const response = await fetch(`${API_BASE_URL}/chat/sessions`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          }
+        console.log("✅ Sessions:", response.data);
+        setSessions(response.data);
 
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to load chat sessions (Status: ${response.status})`);
-        }
-
-        const data: ChatSessionSummary[] = await response.json();
-
-        // ✅ ЛОГ: Подтверждение успешной загрузки списка
-        console.log("✅ Chat Sidebar: Sessions loaded successfully", data);
-
-        setSessions(data);
       } catch (err: any) {
-        console.error("❌ Chat Sidebar Error:", err.message);
-        setError(err.message || "Unknown error");
+        console.error("❌ Chat Sidebar Error:", err.response?.status);
+        setError("Не удалось загрузить чаты");
       } finally {
         setLoading(false);
       }
@@ -58,78 +38,31 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, []);
 
   return (
-    <div
-      style={{
-        width: "260px",
-        borderRight: "1px solid #111827",
-        padding: "12px",
-        boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        backgroundColor: "#111827",
-        color: "#F9FAFB",
-      }}
-    >
-      <h2
-        style={{
-          margin: 0,
-          marginBottom: "8px",
-          fontSize: "18px",
-          fontWeight: 600,
-        }}
-      >
-        Chat history
-      </h2>
+    <div style={{ width: "260px", padding: "12px" }}>
+      <h2>Chat history</h2>
 
-      {loading && <div style={{ color: "#9CA3AF" }}>Loading sessions...</div>}
+      {loading && <div>Loading...</div>}
+      {error && <div>{error}</div>}
 
-      {error && (
-        <div style={{ color: "#FCA5A5", fontSize: "14px" }}>Error: {error}</div>
-      )}
+      {sessions.map((session) => {
+        const isActive = session.id === selectedSessionId;
 
-      {!loading && !error && sessions.length === 0 && (
-        <div style={{ fontSize: "14px", color: "#9CA3AF" }}>
-          You don't have any chats yet.
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        {sessions.map((session) => {
-          const isActive = session.id === selectedSessionId;
-
-          return (
-            <button
-              key={session.id}
-              onClick={() => {
-                  // ⭐ ЛОГ: Убедитесь, что клик дошел до этой точки
-                  console.log("➡️ Клик по кнопке в ChatSidebar для ID:", session.id);
-                  onSelectSession(session.id);
-              }}
-              style={{
-                textAlign: "left",
-                padding: "8px",
-                borderRadius: "6px",
-                border: "none",
-                cursor: "pointer",
-                backgroundColor: isActive ? "#3B82F6" : "transparent",
-                color: isActive ? "#F9FAFB" : "#E5E7EB",
-                fontWeight: isActive ? 600 : 400,
-                fontSize: "14px",
-                transition: 'background-color 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = '#1F2937';
-              }}
-              onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              {session.title || `Chat #${session.id}`}
-            </button>
-          );
-        })}
-      </div>
+        return (
+          <button
+            key={session.id}
+            onClick={() => onSelectSession(session.id)}
+            style={{
+              display: "block",
+              width: "100%",
+              marginBottom: "6px",
+              background: isActive ? "#3B82F6" : "transparent",
+              color: isActive ? "white" : "black",
+            }}
+          >
+            {session.title || `Chat #${session.id}`}
+          </button>
+        );
+      })}
     </div>
   );
 };
