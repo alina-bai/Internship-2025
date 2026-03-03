@@ -1,70 +1,30 @@
-import React, { useEffect, useState } from "react";
-import type { ChatSessionSummary } from "../types/chat";
-import api from "../api/axiosInstance";
-
-interface ChatSidebarProps {
+type Props = {
   selectedSessionId: number | null;
-  onSelectSession: (sessionId: number) => void;
-}
-
-const ChatSidebar: React.FC<ChatSidebarProps> = ({
-  selectedSessionId,
-  onSelectSession,
-}) => {
-  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await api.get("/chat/sessions");
-
-        console.log("✅ Sessions:", response.data);
-        setSessions(response.data);
-
-      } catch (err: any) {
-        console.error("❌ Chat Sidebar Error:", err.response?.status);
-        setError("Не удалось загрузить чаты");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSessions();
-  }, []);
-
-  return (
-    <div style={{ width: "260px", padding: "12px" }}>
-      <h2>Chat history</h2>
-
-      {loading && <div>Loading...</div>}
-      {error && <div>{error}</div>}
-
-      {sessions.map((session) => {
-        const isActive = session.id === selectedSessionId;
-
-        return (
-          <button
-            key={session.id}
-            onClick={() => onSelectSession(session.id)}
-            style={{
-              display: "block",
-              width: "100%",
-              marginBottom: "6px",
-              background: isActive ? "#3B82F6" : "transparent",
-              color: isActive ? "white" : "black",
-            }}
-          >
-            {session.title || `Chat #${session.id}`}
-          </button>
-        );
-      })}
-    </div>
-  );
+  onSelectSession: (id: number) => void;
 };
 
-export default ChatSidebar;
+export default function ChatSidebar({ selectedSessionId, onSelectSession }: Props) {
+  const sessions = [
+    { id: 1, title: "General" },
+    { id: 2, title: "Course Q&A" }
+  ];
+
+  return (
+      <div style={{ width: 200, borderRight: "1px solid #ccc", padding: "1rem" }}>
+        <h3>Chats</h3>
+        {sessions.map(s => (
+            <button
+                key={s.id}
+                onClick={() => onSelectSession(s.id)}
+                style={{
+                  display: "block",
+                  marginBottom: "0.5rem",
+                  backgroundColor: selectedSessionId === s.id ? "#ddd" : "#fff"
+                }}
+            >
+              {s.title}
+            </button>
+        ))}
+      </div>
+  );
+}
