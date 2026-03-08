@@ -1,20 +1,36 @@
-import React, { useState } from "react";
-import ChatSidebar from "./components/ChatSidebar";
-import ChatWindow from "./components/ChatWindow";
+// ВСТРОЕННОЕ (из библиотеки react-router-dom)
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-const App = () => {
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+// НАШИ страницы
+import AuthPage from "./pages/AuthPage";
+import ChatPage from "./pages/ChatPage";
+import CoursePage from "./pages/CoursePage";
 
-  return (
-    <div style={{ display: "flex", height: "100vh" }}>
-      <ChatSidebar
-        selectedSessionId={selectedSessionId}
-        onSelectSession={setSelectedSessionId}
-      />
+// НАШ компонент защиты
+import ProtectedRoute from "./components/ProtectedRoute";
 
-      <ChatWindow sessionId={selectedSessionId} />
-    </div>
-  );
-};
+function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+
+                {/* Страница логина и регистрации */}
+                <Route path="/" element={<AuthPage />} />
+
+                {/* Защищённые страницы */}
+                <Route element={<ProtectedRoute />}>
+
+                    <Route path="/chat" element={<ChatPage />} />
+                    <Route path="/courses" element={<CoursePage />} />
+
+                </Route>
+
+                {/* Если путь не найден */}
+                <Route path="*" element={<Navigate to="/" />} />
+
+            </Routes>
+        </BrowserRouter>
+    );
+}
 
 export default App;
